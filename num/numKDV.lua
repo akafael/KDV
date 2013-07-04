@@ -9,7 +9,7 @@
 --   f_0 = e^{-x^2}
 --]]
 
-require "num/list" -- package to do the nodes of vector
+require "list" -- package to do the nodes of vector
 
 -- default table values
 H = 0.01 -- value to 'h'
@@ -25,7 +25,7 @@ end
 function d1a2(u,h)
   local h = h or H
   local u = u
-  return((u.left.value-u.right.value)/(2*h))
+  return((u.right.value-u.left.value)/(2*h))
 end
 
 -- Third Derivate whith accuracy 2
@@ -51,7 +51,7 @@ function diff(u,n,h)
   end
 end
 
--- Calc U(x,t+dt) based in foward derivate
+-- Calculate U(x,t+dt) based in foward derivate
 function kdvStep(u,c,k,h,dt)
   -- set default values
   local c = c or C
@@ -59,15 +59,17 @@ function kdvStep(u,c,k,h,dt)
   local dt = dt or H
 
   -- calc U(x,t+dt)
-  local u1 = -c*dt*diff(u,1,h) - k*dt*diff(u,3,h)
+  local u1 = u
+  u1.value = -c*dt*diff(u,1,h) - k*dt*diff(u,3,h)
+  u1.t = u1.t+dt
 
   return(u1)
 end
 
 function kdvStepVector(u,c,k,h,dt)
-  local u = u
+  local u0 = u
   for i,u1 in ipairs(u) do
-     u[i] = kdvStep(u1,c,k,h,dt)
+     u0[i] = kdvStep(u1,c,k,h,dt)
   end
   return(u0)
 end
@@ -79,9 +81,9 @@ function u_f0(min_x,max_x,dx)
   local max_x = max_x or 3
 
   local u0 = {}
-  for i=-3, 3,0.1 do
+  for i=min_x, max_x, dx do
     local u = Node:new()
-    u:set_pos(u0[#u0],u0[1])
+    u:set_pos(u0[i],u0[min_x])
     u.left.right = u
     u.right.left = u
 
@@ -89,7 +91,7 @@ function u_f0(min_x,max_x,dx)
     u.x = i
     u.t = 0
 
-    u0[#u0+1] = u
+    u0[i+dx] = u
   end
 
   return(u0)
@@ -104,6 +106,7 @@ function kdv_t(u,t)
    return u0
 end
 
+-- Print file whith u(x,t) in a fixed t
 function printDat(u,filename)
    local file = io.open(filename,"w")
 
@@ -121,3 +124,4 @@ end
 
 -- TODO
 -- > Function to find any value of u(x,t)
+-- > A matrix to map (x,t) value
