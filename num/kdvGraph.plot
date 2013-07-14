@@ -43,3 +43,12 @@ set ytics 0.15;
 # Removendo as imagens auxiliares:
 # system "rm image/ani1-*";
 
+
+set xrange [-30:30]
+set yrange [-0.5:1.5]
+do for[a = 0:11]{
+outfile = sprintf('./image/ani1-%03.0f.png',a);
+set output outfile;
+datafile = sprintf('./data/ut%.0f.dat',a);
+tgraph = sprintf('t = %2.3f',a*0.01);
+plot datafile u 2:3 ls 1 t tgraph;}

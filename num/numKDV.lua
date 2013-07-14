@@ -12,17 +12,17 @@
 require "list" -- package to do the nodes of vector
 
 -- default table values
-H = 0.1 -- value to 'h'
+H = 0.5 -- value to 'h'
 DT = 0.01 -- value to 'dt'
 C = 1 -- value to c constant
 K = 1 -- value to k constant
 
-ZOOM_X = 1
+ZOOM_X = 10
 ZOOM_Y = 1
 
 -- Define initial condition
 function f0(x)
- return(ZOOM_Y*math.exp(-(x^2)))
+   return(ZOOM_Y*math.exp(-((x/ZOOM_X)^2)))
 end
 
 -- First Central Derivative with accuracy 2
@@ -108,8 +108,8 @@ end
 -- Initial condition:
 function u_f0(min_x,max_x,dx)
   local dx = dx or H
-  local min_x = min_x or -3
-  local max_x = max_x or 3
+  local min_x = min_x or -3*ZOOM_X
+  local max_x = max_x or 3*ZOOM_X
 
   local u0 = {}
   for i=min_x, max_x, dx do
@@ -173,24 +173,71 @@ function printDat(filename,u)
 end
 
 -- Print files whith  u(x,ti) with ti = [0,t]
-function printKDV_t(listu,t)
+function printKDV_t(t,listu)
 
-   local u0 = u_f0()
+   local u0 = listu or u_f0()
    print(table.concat({"using DT =",DT,"H=",H,",C=",C}," "))
+
+   print("[kdv wave:]")
+   -- printDat("ut0.dat",u0)
 
    if(t>0) then
       for h=0,t,DT do
 	 u0 = kdvStepVector(u0)
-	 print("drawing t = "..u0[1].t)
+	 print("generating in t = "..u0[1].t)
 	 local filename = {"ut",tostring(h/DT),".dat"}
 	 printDat(table.concat(filename),u0)
       end
-   else
-      printDat("ut0.dat")
    end
 
+   local cmd = ""
    print("[gnuplot:]")
-   print(io.popen("gnuplot < graphConfig.plot")..'\n')
+   plotfile = setupGnuplot("graphConfig.plot",t)
+   cmd = "gnuplot < "..plotfile
+   print(io.popen(cmd)..'\n')
+
+   print("[making animation:]")
+   cmd = "convert -delay 20 -loop 0 image/ani1-* vani1.gif"
+   print(io.popen(cmd)..'\n')
+
+   return u0
+end
+
+function setupGnuplot(filename,t)
+
+   local minx = -3*ZOOM_X
+   local maxx = 3*ZOOM_X
+   local miny = -0.5*ZOOM_Y
+   local maxy = 1.5*ZOOM_Y
+
+   local file = filename
+   local f =  io.open(file)
+   local plotHeader = f:read("*all")
+   f.close()
+
+   file = "kdvGraph.plot" 
+
+   f = io.open(file,"w")
+
+   local plot1 = {table.concat({"set xrange [",minx,":",maxx,"]"}),
+		  table.concat({"set yrange [",miny,":",maxy,"]"})}
+
+   plot1 = table.concat(plot1,'\n')
+
+   local plot2 = {"do for[a = 0:"..t/DT.."]{",
+      "outfile = sprintf('./image/ani1-%03.0f.png',a);",
+      "set output outfile;",
+      "datafile = sprintf('./data/ut%.0f.dat',a);",
+      table.concat({"tgraph = sprintf('t = %2.3f',a*",DT,");"}),
+      "plot datafile u 2:3 ls 1 t tgraph;}"}
+   plot2 = table.concat(plot2,'\n')
+   
+   plotf = table.concat({plotHeader,plot1,plot2},'\n')
+
+   f:write(plotf)
+   f:close()
+
+   return file
 end
 
 -- TODO
