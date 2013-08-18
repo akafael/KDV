@@ -14,7 +14,7 @@ require "list" -- package to do the nodes of vector
 -- default table values
 H = 0.5 -- value to 'h'
 DT = 0.01 -- value to 'dt'
-C = 1 -- value to c constant
+C = -10 -- value to c constant
 K = 1 -- value to k constant
 
 ZOOM_X = 10
@@ -184,7 +184,7 @@ function printKDV_t(t,listu)
    if(t>0) then
       for h=0,t,DT do
 	 u0 = kdvStepVector(u0)
-	 print("generating in t = "..u0[1].t)
+	 -- print("generating in t = "..u0[1].t)
 	 local filename = {"ut",tostring(h/DT),".dat"}
 	 printDat(table.concat(filename),u0)
       end
@@ -194,11 +194,11 @@ function printKDV_t(t,listu)
    print("[gnuplot:]")
    plotfile = setupGnuplot("graphConfig.plot",t)
    cmd = "gnuplot < "..plotfile
-   print(io.popen(cmd)..'\n')
+   print(io.popen(cmd):read("*all"))
 
    print("[making animation:]")
    cmd = "convert -delay 20 -loop 0 image/ani1-* vani1.gif"
-   print(io.popen(cmd)..'\n')
+   print(io.popen(cmd):read("*all"))
 
    return u0
 end
